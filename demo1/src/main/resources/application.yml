@@ -1,4 +1,4 @@
-#git_bbb
+#git_
 #配置mybatis
 mybatis:
   type-aliases-package: come.example.demo

@@ -1,51 +1,66 @@
 package fileAanlysis;
 
 import com.baidu.aip.ocr.AipOcr;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import org.json.JSONObject;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
-import com.google.gson.*;
+public class file_analysis{
+    private static final Path path = Paths.get("E:\\test\\");
+    public static void main(String [] args) throws  InterruptedException{
+    Thread filescan=new Thread(new fileScan(path));
+    Thread fileanalysis=new Thread(new fileAnalysis());
+    fileanalysis.start();
+    filescan.start();
+    filescan.join();
+    fileanalysis.join();
+    }
+}
 
-
-public class file_main {
-
-
+class  Data{
+    public static final Object lock = new Object();
     public static Queue<String> queueFilePath=new LinkedList<>();
     public static Map<String,String> map_weixin=new HashMap<>();
     public static ArrayList<String> failed=new ArrayList<>();
     public static int n=3;
     public static boolean flag=true;
 
-    public static void main(String [] args)   {
-        final Path path = Paths.get("E:\\test\\");
-        getFileList(path);
-        //先循环遍历一下已经有的文件
-        while (!queueFilePath.isEmpty()){
-            fileanalysis(queueFilePath,n);
-        }
-        fileScaner(path);
+    public static synchronized void addQueen(String a){
+        queueFilePath.add(a);
+    }
+    public static synchronized void delQueen(){
+        queueFilePath.remove();
+    }
+    public static synchronized String getHeadNot(){
+        return queueFilePath.peek();
+    }
+    public static synchronized String getHeadYes(){
+        return queueFilePath.poll();
+    }
+    public static synchronized boolean isEmpty(){
+        return queueFilePath.isEmpty();
     }
 
+    public static synchronized void setMap_weixin(String paths,String wordss){
+        map_weixin.put( paths, wordss);
+    }
+    public static synchronized void delMap_weixin(String paths){
+        map_weixin.remove(paths);
+    }
+}
 
-
-    public static void getFileList(Path path) {
-        File file = new File(String.valueOf(path));
-        File[] tempList = file.listFiles();
-        for (int i = 0; i < tempList.length; i++) {
-            if (tempList[i].isFile()) {
-                queueFilePath.add(tempList[i].toString());
-            }
-        }
+class fileScan implements  Runnable{
+    private Path path;
+    public fileScan(Path path){
+        this.path=path;
     }
 
-    public static Path fileScaner(Path path) {
-
+    @Override
+    public void run() {
         try (WatchService watchService = FileSystems.getDefault().newWatchService()) {
             //给path路径加上文件观察服务
             path.register(watchService, StandardWatchEventKinds.ENTRY_CREATE,
@@ -66,22 +81,10 @@ public class file_main {
                     if (kind == StandardWatchEventKinds.ENTRY_CREATE) {
 
                         System.out.println("[新建]");
-                        queueFilePath.add(path.toString() + "\\" + filename.toString());
-                        //循环遍历队列，分析队列中的数据
-                        while (!queueFilePath.isEmpty()){
-                            flag=fileanalysis(queueFilePath,n);
-                            if(flag){
-                                n=3;
-                            }
-                            else {
-                                n--;
-                            }
+                        synchronized(Data.lock){
+                            Data.addQueen(path.toString() + "\\" + filename.toString());
                         }
-                        //输出结果
-                        for(String value:map_weixin.values())
-                        {
-                            System.out.println(value);
-                        };
+
                     }
 
                     //删除事件
@@ -98,35 +101,39 @@ public class file_main {
         } catch (InterruptedException | IOException ex) {
             System.err.println(ex);
         }
-        return null;
+        return ;
     }
+}
 
-    public static boolean fileanalysis(Queue<String> Queue_path,int n) {
+class fileAnalysis implements Runnable{
+
+    @Override
+    public void run() {
         final String APP_ID = "18890384";
         final String API_KEY = "y50FGh8HekqhbhmALaWVv3qd";
         final String SECRET_KEY = "Bsyq4MMnqGGmOaPd1ylXDTIvUSdq6cKk";
-        AipOcr client = new AipOcr(APP_ID, API_KEY, SECRET_KEY);
-        client.setConnectionTimeoutInMillis(2000);
-        client.setSocketTimeoutInMillis(60000);
-        String path = Queue_path.peek();
-        JSONObject res = client.basicGeneral(path, new HashMap<String, String>());
-        String analysisjson=analysisJson(res.toString(2));
-        if(analysisjson==null){
-                if(n==0){
-                    String failedFile=queueFilePath.remove();
-                    failed.add(failedFile);
-                    return true;
+        while (true){
+            AipOcr client = new AipOcr(APP_ID, API_KEY, SECRET_KEY);
+            client.setConnectionTimeoutInMillis(2000);
+            client.setSocketTimeoutInMillis(60000);
+            String path = Data.getHeadNot();
+            JSONObject res = client.basicGeneral(path, new HashMap<String, String>());
+            String analysisjson=analysisJson(res.toString(2));
+            //对分析结果进行判断
+            if(analysisjson==null){
+                if(Data.n==0){
+                    String failedFile=Data.getHeadYes();
+                    Data.failed.add(failedFile);
                 }
                 else {
-                    return false;
+                    Data.n--;
+                    continue;
                 }
-        }else {
-            map_weixin.put(path,analysisjson );
-            queueFilePath.remove();
-            return true;
+            }else {
+                Data.setMap_weixin(path,analysisjson );
+                Data.delQueen();
+            }
         }
-        //遍历一下结果
-
     }
 
     public static String analysisJson(String json) {
@@ -137,13 +144,10 @@ public class file_main {
                 String wordjson = jsonobject.get("words_result").getAsJsonArray().get(i).toString();
                 JsonObject jsonobject2 = (JsonObject) new JsonParser().parse(wordjson);
                 wordRes = wordRes + jsonobject2.get("words").getAsString().trim();
-                //                System.out.println(word_res);
             }
         }catch (Exception e){
             return null;
         }
-                //            System.out.println(word_res);
         return wordRes;
     }
 }
-

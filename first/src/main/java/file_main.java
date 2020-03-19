@@ -1,5 +1,3 @@
-package fileAanlysis;
-
 import com.baidu.aip.ocr.AipOcr;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -19,7 +17,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class file_main{
+public class file_main {
         //定义文件总路径
     private static  Path path=null;
 

@@ -1,5 +1,3 @@
-package fileAanlysis;
-
 import com.baidu.aip.ocr.AipOcr;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -14,37 +12,63 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.*;
 import java.util.*;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class file_main{
-        //定义文件总路径
+public class fileMain {
+    //定义文件总路径
     private static  Path path=null;
 
+    public static String wx="";
+    public static String qq="";
+    public static String outPutPath;
     public static Map<String,String> map=new HashMap<>();
     public static Queue<String> queueFilePath=new LinkedList<>();
-    private static final Path path_weixin = Paths.get("E:\\test\\first\\");
+    private static  Path path_weixin = Paths.get(wx);
     public static List<String> filePath=new ArrayList<>();
     public static List<String> failed=new ArrayList<>();
     public static int n=3;
 
     public static Map<String,String> map_WX=new HashMap<>();
     public static Map<String,String> map_QQ=new HashMap<>();
-    private static final Path path_qq = Paths.get("E:\\test\\second\\");
+    private static  Path path_qq = Paths.get(qq);
+
+    //数据库信息
+    public static  String sql="INSERT INTO  data  VALUES (?)";
+    private static String userName="root";
+    private static String password="root";
+    private static String url="jdbc:mysql://localhost:3306/user?characterEncoding=utf8&useUnicode=true&useSSL=false&serverTimezone=GMT";
+
 
     public static void main(String [] args) throws IOException, DocumentException {
+
+        System.out.println("chengxukaishi");
+        if(args.length!=3){
+            System.out.println("参数输入错误");
+            System.out.println("示例：java -jar Test    参数1(QQ截图路径)   参数2(微信截图路径)  参数3(文档输出路径)");
+            return;
+        }else{
+            qq=args[0];
+            wx=args[1];
+            outPutPath=args[2];
+            path_weixin = Paths.get(wx);
+            path_qq=Paths.get(qq);
+        }
+
+
         path=path_qq;
         Run();
         map_WX=map;
+        database();
         map.clear();
-        System.out.println("diervian");
         path=path_weixin;
         Run();
         map_QQ=map;
 
-        //Photo();
+        Photo();
     }
 
 
@@ -61,6 +85,31 @@ public class file_main{
         System.out.println("Faied"+failed);
     }
 
+    public static void database(){
+    try{
+        Class.forName("com.mysql.cj.jdbc.Driver");
+        System.out.println("MySql驱动加载成功");
+    }catch (ClassNotFoundException e){
+        System.out.println("加载失败");
+    }
+    try{
+        Connection conn= DriverManager.getConnection(url,userName,password);
+        System.out.println("数据库链接成功");
+        PreparedStatement ps=null;
+        try{
+            ps=conn.prepareStatement(sql);
+            for(String values: map_WX.values()){
+                ps.setString(1,values);
+                int len=ps.executeUpdate();
+            }
+        }catch (SQLException e){
+            e.printStackTrace();
+        }
+    }catch (SQLException e){
+        e.printStackTrace();
+    }
+
+    }
     public static void getFileList(Path path) {
         File file = new File(String.valueOf(path));
         File[] tempList = file.listFiles();
@@ -122,7 +171,7 @@ public class file_main{
         return wordRes;
     }
 
-//合成图片
+    //合成图片
     public static void Photo() throws IOException, DocumentException {
         while (true) {
             {
@@ -183,7 +232,7 @@ public class file_main{
                     // 建立一个书写器(Writer)与document对象关联，通过书写器(Writer)可以将文档写入到磁盘中
                     // ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
-                    File file = new File("E://test//" + a + "." + "doc");
+                    File file = new File(outPutPath + a + "." + "doc");
 
                     RtfWriter2.getInstance(document, new FileOutputStream(file));
 

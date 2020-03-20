@@ -265,7 +265,7 @@ public class fileMain {
             Map<String, String> hashMap = new HashMap<>();
 
             for (Map.Entry<String, List<String>> entry : map_WX.entrySet()) {
-
+                boolean flag=true;
                 mapKeyWX = entry.getKey();
                 mapValueWX=entry.getValue();
                 /**
@@ -307,7 +307,12 @@ public class fileMain {
                     }
                     else {
                         System.out.println("[*]此行没有获取到微信扣扣");
+                        flag=false;
+                        failed.add(mapKeyWX);
                     }
+                }
+                if(!flag){
+                    continue;
                 }
                 for(Map.Entry<String,String> entry1: map_QQ.entrySet()){
                     String qqMapPath=entry1.getKey();

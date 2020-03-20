@@ -82,14 +82,14 @@ public class fileMain {
     public static void main(String [] args) throws IOException, DocumentException {
         Print();
         System.out.println("***************************************************程序开始运行*************************************************");
-        if(args.length!=3){
+        if(args.length!=1){
             System.out.println("参数输入错误");
-            System.out.println("示例：java -jar Test    参数1(QQ截图路径)   参数2(微信截图路径)  参数3(文档输出路径)");
+            System.out.println("示例：java -jar Test  参数(所有文件夹所在的文件夹)");
             return;
         }else{
-            qq=args[0];
-            wx=args[1];
-            outPutPath=args[2];
+            qq=args[0]+"\\qq\\";
+            wx=args[0]+"\\wx\\";
+            outPutPath=args[0]+"\\out\\";
             path_weixin = Paths.get(wx);
             path_qq=Paths.get(qq);
         }

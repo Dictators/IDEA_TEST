@@ -113,7 +113,14 @@ public class fileMain {
             getResult();
         }
 
-        System.out.println("Faied"+failed);
+        if(failed.size()==0){
+            System.out.println("[*]Faied:没有失败的文件");
+        }else{
+            System.out.println("[*]失败的文件有：");
+            for(String t:failed){
+                System.out.println(t);
+            }
+        }
     }
     //链接数据库
     public static void database(){
@@ -267,8 +274,13 @@ public class fileMain {
                 String xm="姓名";
                 String wxName="";
                 for(int i=0;i<mapValueWX.size();i++){
-                    if( mapValueWX.get(i).split(":")[0].indexOf(xm)!=-1){
-                        wxName=mapValueWX.get(i).split(":")[1];
+                    String [] aa=mapValueWX.get(i).split(":");
+                    if (aa.length==1){
+                        aa=mapValueWX.get(i).split("：");
+                    }
+                    if( aa[0].replace(" ","").indexOf(xm)!=-1){
+
+                        wxName=aa[1].replace(" ","");
                         System.out.println("我找到姓名了");
                         break;
                     }
@@ -283,10 +295,14 @@ public class fileMain {
                 String wxOfQQnumber="";
                 String wxOfQQString="";
                 for(int i=0;i<mapValueWX.size();i++){
-                    String testtest=mapValueWX.get(i).split(":")[0];
-                    if( mapValueWX.get(i).split(":")[0].indexOf(wxQQ)!=-1){
+                    String[] testtest=mapValueWX.get(i).split(":");
+                    if(testtest.length==1){
+                        testtest=mapValueWX.get(i).split("：");
+                    }
+                    if( testtest[0].replace(" ","").indexOf(wxQQ)!=-1){
                         //wxOfQQString=mapValueWX.get(i).split(":")[0];
-                        wxOfQQnumber=mapValueWX.get(i).split(":")[1];
+                        wxOfQQnumber=testtest[1].replace(" ","");
+                        System.out.println("[*]此行获取到微信扣扣");
                         break;
                     }
                     else {

@@ -303,6 +303,7 @@ public class fileMain {
                         //wxOfQQString=mapValueWX.get(i).split(":")[0];
                         wxOfQQnumber=testtest[1].replace(" ","");
                         System.out.println("[*]此行获取到微信扣扣");
+                        flag=true;
                         break;
                     }
                     else {

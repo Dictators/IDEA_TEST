@@ -96,11 +96,11 @@ public class fileMain {
 
 
         path=path_weixin;
-        analysisFlag=false;
+        analysisFlag=true;
         Run();
         database();
         path=path_qq;
-        analysisFlag=true;
+        analysisFlag=false;
         Run();
         //database();
         Photo();
@@ -246,176 +246,183 @@ public class fileMain {
 
     //合成图片
     public static void Photo() throws IOException, DocumentException {
-        while (true) {
-            {
 
-                String mapvalue = null;
-                String firstString = null;
-                String url = null;
-                String values = null;
-                String a = null;
-                Map<String, String> hashMap = new HashMap<>();
 
-                String mapkey = null;
-                for (Map.Entry<String, String> entry : map_QQ.entrySet()) {
+            List<String> mapValueWX = null;
+            String mapKeyWX = null;
 
-                    mapkey = entry.getKey();
-                    mapvalue = entry.getValue();
-                    Pattern pt = compile("\\d{2,}");
-                    Matcher m = pt.matcher(mapvalue);
-                    int i = 0;
-                    while (m.find()) {
-                        String wxText = m.group();
-                        i++;
+            String firstString = null;
+            String url = null;
+            String values = null;
+            String a = null;
+            Map<String, String> hashMap = new HashMap<>();
+
+            for (Map.Entry<String, List<String>> entry : map_WX.entrySet()) {
+
+                mapKeyWX = entry.getKey();
+                mapValueWX=entry.getValue();
+                /**
+                 * 获取微信里面的姓名
+                 */
+                String xm="姓名";
+                String wxName="";
+                for(int i=0;i<mapValueWX.size();i++){
+                    if( mapValueWX.get(i).split(":")[0].indexOf(xm)!=-1){
+                        wxName=mapValueWX.get(i).split(":")[1];
+                        System.out.println("我找到姓名了");
                         break;
                     }
-                    String wxText = mapvalue;
-                    for(Map.Entry<String,String> Entry:map_QQ.entrySet()){
-                        String qqText = Entry.getValue();
-
-                        int indexOf = wxText.indexOf(qqText);
-                        if (indexOf == -1) {
-                            //没有匹配上的Map集合
-                            Map<String, String> hashMap1 = new HashMap<>();
-//              hashMap1.put(mapkey,mapvalue);
-                            String noKey = null;
-                            String noValue = null;
-                            for (Map.Entry<String, String> entry2 : hashMap1.entrySet()) {
-                                noKey = entry2.getKey();
-                                noValue = entry2.getValue();
-                            }
-                            hashMap.put(noKey, noValue);
-                        } else {
-                            //匹配上的Map集合
-                            Map<String, String> hashMap2 = new HashMap<>();
-                            hashMap2.put(mapkey, mapvalue);
-                            for (Map.Entry<String, String> entry1 : hashMap2.entrySet()) {
-                                url = entry.getKey();
-                                values = entry1.getValue();
-                                System.out.println(values);
-                                System.out.println(url);
-                            }
-                        }
+                    else {
+                        System.out.println("[*]此行没有获取到微信姓名");
                     }
-
-                    a = mapvalue.substring(0, 4);
-                    // 设置纸张大小
-                    Document document = new Document(PageSize.A4);
-
-                    // 建立一个书写器(Writer)与document对象关联，通过书写器(Writer)可以将文档写入到磁盘中
-                    // ByteArrayOutputStream baos = new ByteArrayOutputStream();
-
-                    File file = new File(outPutPath + a + "." + "doc");
-
-                    RtfWriter2.getInstance(document, new FileOutputStream(file));
-
-                    document.open();
-
-                    // 设置中文字体
-
-                    BaseFont bfChinese = BaseFont.createFont(BaseFont.HELVETICA, BaseFont.WINANSI, BaseFont.NOT_EMBEDDED);
-
-                    // 标题字体风格
-
-                    Font titleFont = new Font(bfChinese, 12, Font.BOLD);
-
-                    // // 正文字体风格
-                    Font contextFont = new Font(bfChinese, 10, Font.NORMAL);
-
-                    Paragraph title = new Paragraph("统计报告");
-                    //
-                    // 设置标题格式对齐方式
-
-                    title.setAlignment(Element.ALIGN_CENTER);
-
-                    // title.setFont(titleFont);
-
-                    document.add(title);
-
-                    String contextString = mapvalue;
-//                         "iText是一个能够快速产生PDF文件的java类库。"
-//
-//                + " \n"// 换行 + "iText的java类对于那些要产生包含文本，"
-//
-//                + "表格，图形的只读文档是很有用的。它的类库尤其与java Servlet有很好的给合。"
-//
-//                + "使用iText与PDF能够使你正确的控制Servlet的输出。";
-
-                    Paragraph context = new Paragraph(contextString);
-
-                    // 正文格式左对齐
-
-                    context.setAlignment(Element.ALIGN_LEFT);
-
-                    // context.setFont(contextFont);
-
-                    // 离上一段落（标题）空的行数
-
-                    context.setSpacingBefore(5);
-
-                    // 设置第一行空的列数
-
-                    context.setFirstLineIndent(20);
-
-                    document.add(context);
-                    //
-                    // // 利用类FontFactory结合Font和Color可以设置各种各样字体样式
-                    //
-                    // Paragraph underline = new Paragraph("下划线的实现", FontFactory.getFont(
-                    // FontFactory.HELVETICA_BOLDOBLIQUE, 18, Font.UNDERLINE,
-                    // new Color(0, 0, 255)));
-                    //
-                    // document.add(underline);
-                    //
-
-                    // // 添加图片 Image.getInstance即可以放路径又可以放二进制字节流
-                    //
-
-                    try {
-                        Image img = Image.getInstance(url);
-                        img.setAbsolutePosition(0, 0);
-
-                        img.setAlignment(Image.LEFT);// 设置图片显示位置
-                        document.add(img);
-
-                        document.close();
-
-                    } catch (FileNotFoundException E) {
-                        System.out.println("没有找到图片路径。。。。。" + mapkey);
+                }
+                /**
+                 * 获取微信里面的qq,
+                 */
+                String wxQQ="扣扣";
+                String wxOfQQnumber="";
+                String wxOfQQString="";
+                for(int i=0;i<mapValueWX.size();i++){
+                    String testtest=mapValueWX.get(i).split(":")[0];
+                    if( mapValueWX.get(i).split(":")[0].indexOf(wxQQ)!=-1){
+                        //wxOfQQString=mapValueWX.get(i).split(":")[0];
+                        wxOfQQnumber=mapValueWX.get(i).split(":")[1];
+                        break;
                     }
-                    //
-                    // img.scaleAbsolute(60, 60);// 直接设定显示尺寸
-                    //
-                    // // img.scalePercent(50);//表示显示的大小为原尺寸的50%
-                    //
-                    // // img.scalePercent(25, 12);//图像高宽的显示比例
-                    //
-                    // // img.setRotation(30);//图像旋转一定角度
-                    //
+                    else {
+                        System.out.println("[*]此行没有获取到微信扣扣");
+                    }
+                }
+                for(Map.Entry<String,String> entry1: map_QQ.entrySet()){
+                    String qqMapPath=entry1.getKey();
+                    String qqMapString=entry1.getValue();
+                    if(qqMapString.indexOf(wxName)!=-1&&qqMapString.indexOf(wxOfQQnumber)!=-1){
+
+                        /**
+                         * 需要从qq中获取接待人的姓名组成
+                         */
+                        String qqName="";
+                        String fullName=wxName+qqName;
+                        MakeFile(mapValueWX,qqMapPath,fullName);
+                    }
+                }
 
 
-                    // 得到输入流
-                    // wordFile = new ByteArrayInputStream(baos.toByteArray());
-                    // baos.close();
+            }
+
+    }
+
+    public static void MakeFile(List<String> wxString,String qqFilePath,String fileName) throws IOException, DocumentException {
+        {
+            Document document = new Document(PageSize.A4);
+
+            // 建立一个书写器(Writer)与document对象关联，通过书写器(Writer)可以将文档写入到磁盘中
+            // ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+            File file = new File(outPutPath + fileName + "." + "doc");
+
+            RtfWriter2.getInstance(document, new FileOutputStream(file));
+
+            document.open();
+
+            // 设置中文字体
+
+            BaseFont bfChinese = BaseFont.createFont(BaseFont.HELVETICA, BaseFont.WINANSI, BaseFont.NOT_EMBEDDED);
+
+            // 标题字体风格
+
+            Font titleFont = new Font(bfChinese, 12, Font.BOLD);
+
+            // // 正文字体风格
+            Font contextFont = new Font(bfChinese, 10, Font.NORMAL);
+
+            Paragraph title = new Paragraph("统计报告");
+            //
+            // 设置标题格式对齐方式
+
+            title.setAlignment(Element.ALIGN_CENTER);
+
+            // title.setFont(titleFont);
+
+            document.add(title);
+            for(int i=0;i<wxString.size();i++){
+                String contextString = wxString.get(i);
+
+                Paragraph context = new Paragraph(contextString);
+
+                // 正文格式左对齐
+
+                context.setAlignment(Element.ALIGN_LEFT);
+
+                // context.setFont(contextFont);
+
+                // 离上一段落（标题）空的行数
+
+                context.setSpacingBefore(5);
+
+                // 设置第一行空的列数
+
+                context.setFirstLineIndent(20);
+
+                document.add(context);
+            }
+
+            //
+            // // 利用类FontFactory结合Font和Color可以设置各种各样字体样式
+            //
+            // Paragraph underline = new Paragraph("下划线的实现", FontFactory.getFont(
+            // FontFactory.HELVETICA_BOLDOBLIQUE, 18, Font.UNDERLINE,
+            // new Color(0, 0, 255)));
+            //
+            // document.add(underline);
+            //
+
+            // // 添加图片 Image.getInstance即可以放路径又可以放二进制字节流
+            //
+
+            try {
+                Image img = Image.getInstance(qqFilePath);
+                img.setAbsolutePosition(0, 0);
+
+                img.setAlignment(Image.LEFT);// 设置图片显示位置
+                document.add(img);
+
+                document.close();
+
+            } catch (FileNotFoundException E) {
+                System.out.println("没有找到图片路径。。。。。" + qqFilePath);
+            }
+            //
+            // img.scaleAbsolute(60, 60);// 直接设定显示尺寸
+            //
+            // // img.scalePercent(50);//表示显示的大小为原尺寸的50%
+            //
+            // // img.scalePercent(25, 12);//图像高宽的显示比例
+            //
+            // // img.setRotation(30);//图像旋转一定角度
+            //
+
+
+            // 得到输入流
+            // wordFile = new ByteArrayInputStream(baos.toByteArray());
+            // baos.close();
 //        return "成功";
 //              Thread    thread=new Thread();
 //              @Override
 //                      public void run(){
 //                  hashMap.remove(url);
 //              }
-                    //        Iterator<String> iterator=hashMap.keySet().iterator();
+            //        Iterator<String> iterator=hashMap.keySet().iterator();
 //              while (iterator.hasNext()){
 //                  String  key=iterator.next();
 //                  if(url.equals(key)){
 //                      iterator.remove();
 //                  }
 //            }
-                }
-            }
+//            }
+
         }
     }
-
-
 
     public static void Print(){
         System.out.println("######################################################################################################################################$\n" +

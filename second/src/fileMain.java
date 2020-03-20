@@ -190,9 +190,9 @@ public class fileMain {
                     queueFilePath.remove();
                 }
             }
-        }else{
+        }
+        else{
             List<String> analysisjson=analysisJsonToArray(res.toString(2));
-            //对分析结果进行判断
             if(analysisjson==null){
                 if(n==0){
                     String failedFile=queueFilePath.peek();

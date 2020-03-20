@@ -18,34 +18,70 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class fileMain {
-    //定义文件总路径
-    private static  Path path=null;
+import static java.util.regex.Pattern.*;
 
+public class fileMain {
+    /**
+     * 文件的路径
+     */
+    private static  Path path=null;
+    /**
+     * 获取命令行参数，并将参数传送给路径
+     */
     public static String wx="";
     public static String qq="";
+    /**
+     * 文档的输出路径
+     */
     public static String outPutPath;
-    public static Map<String,String> map=new HashMap<>();
+    /**
+     * 调用aip分析时的路径队列
+     */
     public static Queue<String> queueFilePath=new LinkedList<>();
+    /**
+     * 文件扫描的路径
+     */
+    private static  Path path_qq = Paths.get(qq);
     private static  Path path_weixin = Paths.get(wx);
+    /**
+     * 用来存放失败的文件路径
+     */
     public static List<String> filePath=new ArrayList<>();
     public static List<String> failed=new ArrayList<>();
+    /**
+     * false使用微信的解析方法，true使用qq的解析方法
+     */
+    public static boolean analysisFlag=false;
+    /**
+     * aip分析失败的文件循环的次数
+     */
     public static int n=3;
 
-    public static Map<String,String> map_WX=new HashMap<>();
-    public static Map<String,String> map_QQ=new HashMap<>();
-    private static  Path path_qq = Paths.get(qq);
 
-    //数据库信息
+    /**
+     * 用来存放从图片上分析的文件的结果
+     */
+    public static Map<String,List<String>> map_WX=new HashMap<>();
+    public static Map<String,String> map_QQ=new HashMap<>();
+
+
+    /**
+     * 数据库的相应配置
+     */
     public static  String sql="INSERT INTO  data  VALUES (?)";
     private static String userName="root";
     private static String password="root";
     private static String url="jdbc:mysql://localhost:3306/user?characterEncoding=utf8&useUnicode=true&useSSL=false&serverTimezone=GMT";
 
-
+    /**
+     * 主方法
+     * @param args
+     * @throws IOException
+     * @throws DocumentException
+     */
     public static void main(String [] args) throws IOException, DocumentException {
-
-        System.out.println("chengxukaishi");
+        Print();
+        System.out.println("***************************************************程序开始运行*************************************************");
         if(args.length!=3){
             System.out.println("参数输入错误");
             System.out.println("示例：java -jar Test    参数1(QQ截图路径)   参数2(微信截图路径)  参数3(文档输出路径)");
@@ -59,15 +95,14 @@ public class fileMain {
         }
 
 
-        path=path_qq;
-        Run();
-        map_WX=map;
-        database();
-        map.clear();
         path=path_weixin;
+        analysisFlag=false;
         Run();
-        map_QQ=map;
-
+        database();
+        path=path_qq;
+        analysisFlag=true;
+        Run();
+        //database();
         Photo();
     }
 
@@ -78,13 +113,9 @@ public class fileMain {
             getResult();
         }
 
-
-        for(String map: map.values()){
-            System.out.println(map);
-        }
         System.out.println("Faied"+failed);
     }
-
+    //链接数据库
     public static void database(){
     try{
         Class.forName("com.mysql.cj.jdbc.Driver");
@@ -98,7 +129,11 @@ public class fileMain {
         PreparedStatement ps=null;
         try{
             ps=conn.prepareStatement(sql);
-            for(String values: map_WX.values()){
+            for(List<String> strList: map_WX.values()){
+                String values="";
+                for(int k=0;k<strList.size();k++){
+                    values=values+strList.get(k);
+                }
                 ps.setString(1,values);
                 int len=ps.executeUpdate();
             }
@@ -136,27 +171,49 @@ public class fileMain {
         String path = queueFilePath.peek();
         JSONObject res = client.basicGeneral(path, new HashMap<String, String>());
         System.out.println(res.toString(2));
-        String analysisjson=analysisJson(res.toString(2));
-        //对分析结果进行判断
-        if(analysisjson==null){
-            if(n==0){
-                String failedFile=queueFilePath.peek();
-                failed.add(failedFile);
-                n=3;
+        if(analysisFlag){
+            String analysisjson=analysisJsonToString(res.toString(2));
+            //对分析结果进行判断
+            if(analysisjson==null){
+                if(n==0){
+                    String failedFile=queueFilePath.peek();
+                    failed.add(failedFile);
+                    n=3;
+                }
+                else {
+                    n--;
+                }
             }
             else {
-                n--;
+                map_QQ.put(path,analysisjson );
+                if(!queueFilePath.isEmpty()){
+                    queueFilePath.remove();
+                }
+            }
+        }else{
+            List<String> analysisjson=analysisJsonToArray(res.toString(2));
+            //对分析结果进行判断
+            if(analysisjson==null){
+                if(n==0){
+                    String failedFile=queueFilePath.peek();
+                    failed.add(failedFile);
+                    n=3;
+                }
+                else {
+                    n--;
+                }
+            }
+            else {
+                map_WX.put(path,analysisjson );
+                if(!queueFilePath.isEmpty()){
+                    queueFilePath.remove();
+                }
             }
         }
-        else {
-            map.put(path,analysisjson );
-            if(!queueFilePath.isEmpty()){
-                queueFilePath.remove();
-            }
-        }
+
     }
 
-    public static String analysisJson(String json) {
+    public static String analysisJsonToString(String json) {
         JsonObject jsonobject = (JsonObject) new JsonParser().parse(json);
         String wordRes = "";
         try{
@@ -169,6 +226,22 @@ public class fileMain {
             return null;
         }
         return wordRes;
+    }
+
+    public static List<String> analysisJsonToArray(String json) {
+        JsonObject jsonobject = (JsonObject) new JsonParser().parse(json);
+        ArrayList<String> wordResArray=new ArrayList<>();
+        try{
+            for (int i = 0; i < jsonobject.get("words_result").getAsJsonArray().size(); i++) {
+                String wordjson = jsonobject.get("words_result").getAsJsonArray().get(i).toString();
+                JsonObject jsonobject2 = (JsonObject) new JsonParser().parse(wordjson);
+                wordResArray.add(jsonobject2.get("words").getAsString().trim());
+            }
+        }catch (Exception e){
+            return null;
+        }
+        System.out.println(wordResArray);
+        return wordResArray;
     }
 
     //合成图片
@@ -184,11 +257,11 @@ public class fileMain {
                 Map<String, String> hashMap = new HashMap<>();
 
                 String mapkey = null;
-                for (Map.Entry<String, String> entry : map_WX.entrySet()) {
+                for (Map.Entry<String, String> entry : map_QQ.entrySet()) {
 
                     mapkey = entry.getKey();
                     mapvalue = entry.getValue();
-                    Pattern pt = Pattern.compile("\\d{2,}");
+                    Pattern pt = compile("\\d{2,}");
                     Matcher m = pt.matcher(mapvalue);
                     int i = 0;
                     while (m.find()) {
@@ -341,5 +414,61 @@ public class fileMain {
             }
         }
     }
+
+
+
+    public static void Print(){
+        System.out.println("######################################################################################################################################$\n" +
+                "######################################################################################################################################$\n" +
+                "######################################################################################################################################$\n" +
+                "################################################################@@@###################################################################$\n" +
+                "########################################################$!'                   `:|&####################################################$\n" +
+                "####################################################%`                             '$#################################################$\n" +
+                "###################################################!                                .|################################################$\n" +
+                "##################################################$`                                 .%###############################################$\n" +
+                "##################################################;                           ..      :@##############################################$\n" +
+                "#################################################&'  :%!;!%@###|.        ;@##@$!;!%;  `$##############################################$\n" +
+                "#################################################%.       .;$%%##!     !##$%&!`     ...%##############################################$\n" +
+                "#################################################|           '$&!`     `!$$'           |##############################################$\n" +
+                "#################################################!       ..    `|;     ;|.    .`.      !##############################################$\n" +
+                "################%:%##############################;  .!########%'!@!      `|@#######%.  ;###############################%&#############$\n" +
+                "################&' !#############################; '&#@&&$$$$%!'!#|      .;;:::;!!;:`':|#############################$`;##############$\n" +
+                "#################|  '&###########################!              |#|                    ;###########################@; `$##############$\n" +
+                "##################!   ;@#########################&'            .%#|                    |##########################|.  |###############$\n" +
+                "##################@;    !#########################@:           :@#|                   :@########################$`   ;################$\n" +
+                "###################@:    .%#######################%%$:    ...'$###!     ::          :|$#######################@;    !#################$\n" +
+                "#####################;     '&#####################&!|%$%.   .%$:|&'      .`   .`!@$$%|@######################!     |##################$\n" +
+                "######################|      ;@####################%';!$@;     .|%.            ;@|:!;$#####################$`    .|###################$\n" +
+                "#######################&'      ;@###################$':|%###$:`'%#@|!%&%`   '%##!;|'%####################&:     .|####################$\n" +
+                "#########################;       !###################&'`%!'|@#####$`.|#######&;:$|`|###################@;      `$#####################$\n" +
+                "##########################%.      .|##################@:.|#!.   ..':;!!;'`     ;:'$##################@;       :@######################$\n" +
+                "###########################@:        |##################! !#%''`.            .:`:@#################$'       .%########################$\n" +
+                "#############################$`        '$################%`;;     !###!     `'.!#################!         ;@#########################$\n" +
+                "###############################%.         ;@##############&:'`    ;##$`      `%###############%`         !@###########################$\n" +
+                "#################################|.         `%##############|    '&#@@;     ;@#############@:          !##############################$\n" +
+                "###################################%.          ;@############%`  `$###;   `%#############!          .|################################$\n" +
+                "#####################################&'          .%############|. !##$` `%############%.          `%##################################$\n" +
+                "########################################!      ':.  :&#############################%`           :&####################################$\n" +
+                "##########################################|.     ;$;   :&#######################%`  `%&:     `%#######################################$\n" +
+                "############################################@;     `%$'   :&################&;   '$#%`    `%##########################################$\n" +
+                "###############################################@;     :&&;   '%@########$:   .!@@;     `%#############################################$\n" +
+                "################################$`  .%############@!     `%#%'    ;&#@!   '$#$'     `%################################################$\n" +
+                "################################$'   `$##############@!.     '$@$:    '%###!.    :&##############%`  '$###############################$\n" +
+                "##################################@;  ;###############@$@$'      '%#@;     `|@#################@:    '%###############################$\n" +
+                "####################################!  ;@####&%;`         !##$:       :$@%'      .;%@##########!   :@#################################$\n" +
+                "######################$'  '$#########;   :&&:      .:%@#@%:.  .!@@|`      .;&#$:        .:;$##;   !###################################$\n" +
+                "#####################%.   ;$'       `$$'    `$###@%;.        `!&######&!`      .;&#&|:'`:%@@!   .%#########$'`;$######################$\n" +
+                "#####################&'   .|$`       `$#|.  '&!      `!%@###################$!`     .:%##;     ;@|.       '%:   ;@####################$\n" +
+                "#######################%'`|@%&##########$`  :@######################################&|;'|@:  .%#|        `%;    :@####################$\n" +
+                "##########################$%@############!   :@##########################################@:  '&##########&&$' .|######################$\n" +
+                "##########################################%.   `;;''%###################################%`  .%###########@!:$#########################$\n" +
+                "############################################@;      |############################|         !@#########################################$\n" +
+                "##################################################################################&;. `:%#############################################$\n" +
+                "######################################################################################################################################$\n" +
+                "######################################################################################################################################$\n" +
+                "######################################################################################################################################$\n" +
+                "######################################################################################################################################$\n");
+    }
+
 
 }

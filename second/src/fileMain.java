@@ -98,7 +98,11 @@ public class fileMain {
         path=path_weixin;
         analysisFlag=true;
         Run();
-        database();
+        try{
+            database();
+        }catch(Exception e){
+            e.printStackTrace();
+        }
         path=path_qq;
         analysisFlag=false;
         Run();
@@ -280,7 +284,7 @@ public class fileMain {
                     }
                     if( aa[0].replace(" ","").indexOf(xm)!=-1){
 
-                        wxName=aa[1].replace(" ","");
+                        wxName=aa[0].replace(" ","");
                         System.out.println("我找到姓名了");
                         break;
                     }
@@ -315,6 +319,9 @@ public class fileMain {
                 if(!flag){
                     continue;
                 }
+//                if(wxName==null||wxOfQQnumber==null){
+//                    continue;
+//                }
                 for(Map.Entry<String,String> entry1: map_QQ.entrySet()){
                     String qqMapPath=entry1.getKey();
                     String qqMapString=entry1.getValue();
@@ -323,9 +330,13 @@ public class fileMain {
                         /**
                          * 需要从qq中获取接待人的姓名组成
                          */
-                        String qqName="";
+                        String qqName="1";
                         String fullName=wxName+qqName;
                         MakeFile(mapValueWX,qqMapPath,fullName);
+                        File resFile=new File(mapKeyWX);
+                        String name=mapKeyWX.split("\\\\")[mapKeyWX.split("\\\\").length-1];
+                        File newFile=new File(outPutPath+"\\"+name);
+                        resFile.renameTo(newFile);
                     }
                 }
 

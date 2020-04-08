@@ -1,7 +1,0 @@
-Manifest-Version: 1.0
-Class-Path: slf4j-simple-1.7.25.jar java-sdk-4.12.0.jar libs/commons-io-
- 2.6.jar libs/log4j-1.2.17.jar libs/bcprov-jdk14-138.jar libs/slf4j-api-
- 1.7.25.jar libs/itext-rtf-2.1.4.jar libs/gson-2.8.2.jar libs/itext-asia
- n-5.2.0.jar libs/itext-2.1.5.jar libs/bcmail-jdk14-138.jar libs/json-20
- 160810.jar
-
